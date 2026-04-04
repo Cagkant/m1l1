@@ -1,38 +1,39 @@
-from flask import Flask
-import random
+import discord
+from discord.ext import commands
+from bot_token import TOKEN
 
-facts_list = ["Teknolojik bağımlılıktan mustarip olan çoğu kişi, kendilerini şebeke kapsama alanı dışında bulduklarında veya cihazlarını kullanamadıkları zaman yoğun stres yaşarlar.",
-"2018 yılında yapılan bir araştırmaya göre 18-34 yaş arası kişilerin %50'den fazlası kendilerini akıllı telefonlarına bağımlı olarak görüyor.",
-"Teknolojik bağımlılık çalışması, modern bilimsel araştırmanın en ilgili alanlarından biridir.",
-"2019'da yapılan bir araştırmaya göre, insanların %60'ından fazlası akıllı telefonlarındaki iş mesajlarına işten ayrıldıktan sonraki 15 dakika içinde yanıt veriyor.",
-"Teknolojik bağımlılıkla mücadele etmenin bir yolu, zevk veren ve ruh halini iyileştiren faaliyetler aramaktır.",
-"Elon Musk, sosyal ağların içeriği görüntülemek için mümkün olduğunca fazla zaman harcamamız için bizi platformun içinde tutmak üzere tasarlandığını iddia ediyor.",
-"Elon Musk ayrıca sosyal ağların düzenlenmesini ve kullanıcıların kişisel verilerinin korunmasını savunmaktadır. Sosyal ağların hakkımızda büyük miktarda bilgi topladığını ve bu bilgilerin daha sonra düşüncelerimizi ve davranışlarımızı manipüle etmek için kullanılabileceğini iddia ediyor.",
-"Sosyal ağların olumlu ve olumsuz yanları vardır ve bu platformları kullanırken her ikisinin de farkında olmalıyız."
-]
+from bot_logic import detect_class
 
-sifre = ""
-karaks = "qwertyuıopğüasdfghjklşizxcvbnmöç1234567890.,<>:;-_*?=)(/&%+^'!}][{§½$#£>}])"
+intents = discord.Intents.default()
+intents.message_content = True
 
-app = Flask(__name__)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
-@app.route("/rastgele_gercekler")
-def hello_world():
-    return f'<p>{random.choice(facts_list)}. Anasayfaya dönmek için:</p><a href = "/"> Tıkla </a></p>'
+@bot.event
+async def on_ready():
+    print(f'We have logged in as {bot.user}')
 
-@app.route("/farklıbise")
-def bise():
-    return f"<p>Şişman ablam yer altında, dalları yer üstünde. Cevap için:</p><a href = '/cevap'> Tıkla </a>"
+@bot.command()
+async def hello(ctx):
+    await ctx.send(f'Hi! I am a bot {bot.user}!')
 
-@app.route("/cevap")
-def cvp():
-    return f"<p>Cevap havuçtu. Anasayfaya dönmek için:</p><a href = '/'> Tıkla </a>"
+@bot.command()
+async def heh(ctx, count_heh = 5):
+    await ctx.send("he" * count_heh)
 
+@bot.command()
+async def detect(ctx):
+    if ctx.message.attachments:
+        await ctx.send("Görsel algılandı.")
+        for attachment in ctx.message.attachments:
+            filename = attachment.filename
+            file_path = f"images/{filename}"
+            await attachment.save(file_path)
+            
+            name, score = detect_class(file_path, "converted_keras-4/keras_model.h5", "converted_keras-4/labels.txt")
+            await ctx.send(f"Algılanan sınıf: {name}, Güven Skoru: {score:.2f}")
+            
+    else:
+        await ctx.send("Görsel Koy!")
 
-
-@app.route("/")
-def real_world():
-    return f'<p>Teknoloji hakkında bilgi almak için:</p><a href = "/rastgele_gercekler"> Tıkla </a> <p> bilmece için</p><a href = "/farklıbise"> Tıkla </a>'
-
-
-app.run(debug=True, port=5000)
+bot.run(TOKEN)

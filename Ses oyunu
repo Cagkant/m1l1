@@ -1,0 +1,76 @@
+import sounddevice as sd
+import numpy as np
+import scipy.io.wavfile as wav
+import speech_recognition as sr
+import random
+
+from googletrans import Translator
+
+seviyeye_göre_kelimeler = {
+    "kolay": ["cat", "dog", "apple", "milk", "sun"],
+    "orta": ["banana", "school", "friend", "window", "yellow"],
+    "zor": ["technology", "university", "information", "pronunciation", "imagination"]
+}
+
+duration = 5  # kayıt saniyeleri
+sample_rate = 44100
+
+def seskaydet():
+    recording = sd.rec(
+    int(duration * sample_rate), # kaydedilecek örnek sayısı
+    samplerate=sample_rate,      # örnekleme hızı
+    channels=1,                  # 1, mono kayıt anlamına gelir.
+    dtype="int16")               # kayıtlı örnekler için veri türü
+    sd.wait()  # kayıt bitene kadar beklemek
+
+    wav.write("output.wav", sample_rate, recording)
+
+
+
+print("Kolaydan başlayalım.(İngiliz şeklinde amerikan ingilizcesi yok!!!) Söylenen türkçe kelimeyi ingilizceye çevir")
+#print(random.choice(seviyeye_göre_kelimeler["kolay"]))
+
+b = input("Kolay, orta veya zor seviyesini seçin: ").lower()
+
+hak = 5
+
+while hak > 0:
+    if b == "kolay":
+        sklm = random.choice(seviyeye_göre_kelimeler["kolay"])
+        ceviri = Translator().translate(sklm, dest='tr')
+        print(ceviri.text)
+    elif b == "orta":
+        sklm = random.choice(seviyeye_göre_kelimeler["orta"])
+        ceviri = Translator().translate(sklm, dest='tr')
+        print(ceviri.text)
+    elif b == "zor":
+        sklm = random.choice(seviyeye_göre_kelimeler["zor"])
+        ceviri = Translator().translate(sklm, dest='tr')
+        print(ceviri.text)
+
+    seskaydet()
+
+    recognizer = sr.Recognizer()
+    with sr.AudioFile("output.wav") as source:
+        audio = recognizer.record(source)
+    try:
+        text = recognizer.recognize_google(audio, language="en-UK")  # Google'ın konuşma tanıma API'sini kullanarak sesi metne dönüştürme
+    except sr.UnknownValueError:             # - Google gürültü veya sessizlik nedeniyle konuşmayı anlayamadığında
+        print("Konuşma tanınamadı.")
+    except sr.RequestError as e:             # - İnternet bağlantısı yoksa veya API kullanılamıyorsa
+        print(f"Hizmet hatası: {e}")  
+
+    print(f"Tanınan metin: {text}")
+    translator = Translator()
+    if text.lower() == sklm.lower():
+        print("Tebrikler! Doğru cevap.")
+        break
+    else:
+        hak -= 1
+        print(f"Yanlış cevap. Kalan hakkınız: {hak}")
+
+        print("Tekrar deneyin.")
+
+        
+if hak == 0:
+    print("Hakkınız kalmadı. Oyun bitti.")
